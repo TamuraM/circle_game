@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -7,10 +8,13 @@ using UnityEngine;
 /// </summary>
 public class CircleSpawner : MonoBehaviour
 {
-    [SerializeField] private CircleBehavior _circlePrefab = default;
-    private List<CircleType> _circleTypes = new List<CircleType>();
+    [SerializeField] private ScoreManager _scoreManager = default;
+    [SerializeField] private CircleBehavior[] _circlePrefabs = new CircleBehavior[0];
+    private List<int> _circleTypes = new List<int>();
     private int _circleCount = 0;
+    private int _circleCount2 = -1;
     [SerializeField] private Transform _spawnPoint = default;
+    [SerializeField] private Player _player = default;
 
     void Start()
     {
@@ -29,7 +33,7 @@ public class CircleSpawner : MonoBehaviour
     /// </summary>
     public void CreateCircleType()
     {
-        CircleType type = (CircleType)Random.Range(0, 12);
+        int type = Random.Range(0, _circlePrefabs.Length);
         _circleTypes.Add(type);
     }
 
@@ -38,10 +42,30 @@ public class CircleSpawner : MonoBehaviour
     /// </summary>
     public void SpawnCircle()
     {
-        var circle = GameObject.Instantiate(_circlePrefab, _spawnPoint);
-        circle.SetCircleType(_circleTypes[_circleCount]);
+        int nowType = _circleTypes[_circleCount];
+        var circle = GameObject.Instantiate(_circlePrefabs[nowType], _spawnPoint);
+        circle.SetCircleSpawner(this);
+        circle.SetPriorityNumber(_circleCount);
         _circleCount++;
         CreateCircleType();
+        _player.SetNowCircle(circle.gameObject.GetComponent<Rigidbody2D>());
+    }
+
+    /// <summary>
+    /// â~ìØémÇ™Ç†ÇΩÇ¡ÇƒêVÇµÇ≠â~ÇèoåªÇ≥ÇπÇÈÇ∆Ç´
+    /// </summary>
+    /// <param name="spawnPoint"></param>
+    /// <param name="nextCircle"></param>
+    public void SpawnCircle(Vector3 spawnPoint, GameObject nextCircle, int circleIndex)
+    {
+        var instCircle = Instantiate(nextCircle, spawnPoint, Quaternion.identity);
+        var circle = instCircle.GetComponent<CircleBehavior>();
+        circle.SetIsCollidedTrue();
+        circle.SetCircleSpawner(this);
+        circle.SetPriorityNumber(_circleCount2);
+        circle.GetComponent<Rigidbody2D>().simulated = true;
+        _circleCount2--;
+        _scoreManager.ScorePlus(circleIndex);
     }
 
 }
